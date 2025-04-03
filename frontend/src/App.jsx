@@ -1,11 +1,14 @@
 import { useEffect } from "react"
-import { Header } from "../components/Header.jsx"
+import { Header } from "./components/Header.jsx"
 import { useReducer } from "react"
-import Main from "../components/Main.jsx"
-import { Loader } from "../components/Loader.jsx"
-import { Error } from "../components/Error.jsx"
-import { StartScreen } from "../components/StartScreen.jsx"
-import { Question } from "../components/Question.jsx"
+import Main from "./components/Main.jsx"
+import { Loader } from "./components/Loader.jsx"
+import { Error } from "./components/Error.jsx"
+import { StartScreen } from "./components/StartScreen.jsx"
+import { Question } from "./components/Question.jsx"
+import { NextButton } from "./components/NextButton.jsx"
+import { Progress } from "./components/Progress.jsx"
+import FinishedScreen from "./components/FinishedScreen.jsx"
 
 
 
@@ -18,6 +21,7 @@ const getInitialState = {
   index: 0,
   answer: null,
   points: 0,
+  highscore: 0,
 }
 
 function reducer(state, action) {
@@ -42,8 +46,13 @@ function reducer(state, action) {
       }
 
     case 'nextQuestion':
-      return { ...state, index: state.index + 1 }
+      return { ...state, index: state.index + 1, answer: null }
 
+    case 'finish':
+      return { ...state, status: 'finished', highscore: state.points > state.highscore ? state.points : state.highscore }
+
+    case 'restart':
+      return { ...getInitialState, status: 'ready', questions: state.questions }
 
     default:
       throw new Error('action unkown')
@@ -55,12 +64,12 @@ function reducer(state, action) {
 
 
 function App() {
-  const [{ questions, status, index, answer }, dispatch] = useReducer(reducer, getInitialState)
+  const [{ questions, status, index, answer, points, highscore }, dispatch] = useReducer(reducer, getInitialState)
 
 
 
   const numQuestions = questions.length;
-
+  const maxPossiblePoints = questions.reduce((prev, curr) => prev + curr.points, 0)
   useEffect(() => {
     fetchQuestions()
   }, [])
@@ -86,9 +95,16 @@ function App() {
         {status === 'loading' && <Loader />}
         {status === 'error' && <Error />}
         {status === 'ready' && <StartScreen dispatch={dispatch} numQuestions={numQuestions} />}
-        {status === 'active' && <Question answer={answer} dispatch={dispatch} question={questions[index]} />}
+        {status === 'active' && <>
+          <Progress answer={answer} index={index} numQuestions={numQuestions} points={points} maxPossiblePoints={maxPossiblePoints} />
+          <Question answer={answer} dispatch={dispatch} question={questions[index]} />
+          <NextButton dispatch={dispatch} answer={answer} index={index} numQuestions={numQuestions} />
+        </>}
 
-        <NextButton dispatch={dispatch} />
+        {status === 'finished' && <FinishedScreen
+          points={points}
+          maxPossiblePoints={maxPossiblePoints} highscore={highscore} dispatch={dispatch} />}
+
       </Main>
 
     </div>
