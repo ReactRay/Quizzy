@@ -11,7 +11,6 @@ async function query() {
     const questions = await collection.find().toArray()
     return questions
   } catch (err) {
-    loggerService.error('cannot find questions', err)
     throw err
   }
 }
